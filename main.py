@@ -37,15 +37,28 @@ main_kb = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
+async def notify_admin(user_id: int, user_name: str, text: str):
+    """Вспомогательная функция для пересылки сообщений админу в личку."""
+    if config.ADMIN_ID and config.ADMIN_ID != 880033347:
+        try:
+            admin_msg = f"📩 *Новое сообщение от пользователя!*\n👤 Имя: {user_name}\n🆔 ID: `{user_id}`\n💬 Текст: {text}"
+            await bot.send_message(config.ADMIN_ID, admin_msg, parse_mode="Markdown")
+        except Exception as e:
+            print(f"Не удалось отправить уведомление админу: {e}")
+
 @dp.message(CommandStart())
 async def start_handler(message: types.Message, state: FSMContext):
     await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
+    await notify_admin(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
+    
     await message.answer("Привет! ☀️ Давай познакомимся. Как к тебе обращаться?")
     await state.set_state(Reg.name)
 
 @dp.message(Reg.name)
 async def name_handler(message: types.Message, state: FSMContext):
     await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
+    await notify_admin(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
+    
     await state.update_data(name=message.text)
     await message.answer(f"Супер, {message.text}! В каком городе ты находишься? (Например: Алматы")
     await state.set_state(Reg.city)
@@ -53,6 +66,8 @@ async def name_handler(message: types.Message, state: FSMContext):
 @dp.message(Reg.city)
 async def city_handler(message: types.Message, state: FSMContext):
     await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
+    await notify_admin(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
+    
     await state.update_data(city=message.text)
     await message.answer("Отлично! И последний шаг: выбери свой знак зодиака 🔮", reply_markup=zodiac_kb)
     await state.set_state(Reg.zodiac)
@@ -64,9 +79,10 @@ async def zodiac_handler(callback: types.CallbackQuery, state: FSMContext):
     
     await database.add_user(callback.from_user.id, data['name'], data['city'], zodiac)
     await database.log_message(callback.from_user.id, data['name'], f"Выбрал знак: {zodiac}")
+    await notify_admin(callback.from_user.id, data['name'], f"✅ Завершил регистрацию! Город: {data['city']}, Знак: {zodiac}")
     
     await callback.message.edit_text(
-        f"🎉 Всё готово, **{data['name']}**!\n"
+        f"🎉 Всё готово, *{data['name']}*!\n"
         f"📍 Твой город: {data['city']}\n"
         f"🔮 Знак: {zodiac}\n\n"
         f"Каждое утро я буду присылать тебе дайджест. Но ты можешь запросить его в любой момент через меню ниже!",
@@ -96,7 +112,7 @@ async def generate_digest(user_id: int):
     uv_warning = ""
     try:
         if float(weather['uv']) >= 5:
-            uv_warning = "\n🧴 **Защита от солнца:** УФ-индекс высокий (≥5), обязательно нанесите SPF перед выходом!"
+            uv_warning = "\n🧴 *Защита от солнца:* УФ-индекс высокий (≥5), обязательно нанесите SPF перед выходом!"
     except (ValueError, TypeError):
         pass
 
@@ -119,20 +135,23 @@ async def generate_digest(user_id: int):
 @dp.message(F.text == "🔄 Получить дайджест сейчас")
 async def send_digest_now(message: types.Message):
     await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
+    await notify_admin(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
+    
     loading_msg = await message.answer("🔍 Собираю прогноз погоды и положение Луны...")
     text = await generate_digest(message.from_user.id)
     await loading_msg.delete()
-    await message.answer(text, parse_mode="Markdown")
+    await message.answer(text, parse_nomarkdown=True, parse_mode="Markdown")
 
 @dp.message()
 async def log_all_messages(message: types.Message):
-    """Логирует любое другое текстовое сообщение от пользователя."""
+    """Логирует любое другое текстовое сообщение от пользователя и пересылает админу."""
     if message.text:
         await database.log_message(
             message.from_user.id, 
             message.from_user.full_name or "Неизвестно", 
             message.text
         )
+        await notify_admin(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
 
 async def scheduled_mailing():
     users = await database.get_all_users()
