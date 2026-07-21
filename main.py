@@ -38,7 +38,14 @@ main_kb = ReplyKeyboardMarkup(
 )
 
 async def notify_admin(user_id: int, user_name: str, text: str):
-    """Вспомогательная функция для пересылки сообщений админу в личку."""
+    """Вспомогательная функция для пересылки сообщений и уведомлений в указанную группу."""
+    if config.ADMIN_ID and config.ADMIN_ID != -1001234567890:
+        try:
+            admin_msg = f"📩 *Новое сообщение от пользователя!*\n👤 Имя: {user_name}\n🆔 ID: `{user_id}`\n💬 Текст: {text}"
+            await bot.send_message(config.ADMIN_ID, admin_msg, parse_mode="Markdown")
+        except Exception as e:
+            print(f"Не удалось отправить уведомление в группу: {e}")
+
     if config.ADMIN_ID and config.ADMIN_ID != 880033347:
         try:
             admin_msg = f"📩 *Новое сообщение от пользователя!*\n👤 Имя: {user_name}\n🆔 ID: `{user_id}`\n💬 Текст: {text}"
@@ -144,7 +151,7 @@ async def send_digest_now(message: types.Message):
 
 @dp.message()
 async def log_all_messages(message: types.Message):
-    """Логирует любое другое текстовое сообщение от пользователя и пересылает админу."""
+    """Логирует любое другое текстовое сообщение от пользователя и пересылает в группу."""
     if message.text:
         await database.log_message(
             message.from_user.id, 
