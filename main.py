@@ -1,4 +1,5 @@
 import asyncio
+import os
 from datetime import datetime
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import CommandStart
@@ -6,6 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from aiohttp import web
 
 import config
 import database
@@ -43,7 +45,7 @@ async def start_handler(message: types.Message, state: FSMContext):
 @dp.message(Reg.name)
 async def name_handler(message: types.Message, state: FSMContext):
     await state.update_data(name=message.text)
-    await message.answer(f"Супер, {message.text}! В каком городе ты находишься? (Например: Алматы)")
+    await message.answer(f"Супер, {message.text}! В каком городе ты находишься? (Например: Алматы, Москва, Ташкент)")
     await state.set_state(Reg.city)
 
 @dp.message(Reg.city)
@@ -92,7 +94,7 @@ async def generate_digest(user_id: int):
     uv_warning = ""
     try:
         if float(weather['uv']) >= 5:
-            uv_warning = "\n🧴 **Защита от солнца:** УФ-индекс высокий, обязательно нанесите SPF перед выходом!"
+            uv_warning = "\n🧴 **Защита от солнца:** УФ-индекс высокий (≥5), обязательно нанесите SPF перед выходом!"
     except (ValueError, TypeError):
         pass
 
@@ -129,12 +131,25 @@ async def scheduled_mailing():
         except Exception as e:
             print(f"Не удалось отправить пользователю {user['user_id']}: {e}")
 
+async def handle_ping(request):
+    """Веб-страница для проверки статуса Render (Health Check)."""
+    return web.Response(text="Bot is running 24/7!")
+
 async def main():
     await database.init_db()
     scheduler.add_job(scheduled_mailing, 'cron', hour=config.DIGEST_HOUR, minute=config.DIGEST_MINUTE)
     scheduler.start()
 
-    print("Бот успешно запущен!")
+    # Запуск микро-веб-сервера для Render
+    app = web.Application()
+    app.router.add_get('/', handle_ping)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 8080))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+
+    print(f"Бот успешно запущен! Веб-сервер слушает порт {port}")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
