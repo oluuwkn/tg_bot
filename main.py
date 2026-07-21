@@ -101,18 +101,18 @@ async def generate_digest(user_id: int):
         pass
 
     message = (
-        f"☀️ **Доброе утро, {user['name']}! Твой дайджест:**\n\n"
-        f"🗓 **{date_str}**\n\n"
-        f"📍 **Погода в г. {weather['city_name']}:** {weather['condition']}\n"
+        f"☀️ *Доброе утро, {user['name']}! Твой дайджест:*\n\n"
+        f"🗓 *{date_str}*\n\n"
+        f"📍 *Погода в г. {weather['city_name']}:* {weather['condition']}\n"
         f"🌡 Температура: {weather['temp']} (Ощущается как {weather['feels_like']})\n"
         f"💧 Влажность: {weather['humidity']} | 💨 Ветер: {weather['wind']}\n"
         f"☀️ УФ-индекс: {weather['uv']}{uv_warning}\n\n"
-        f"🔮 **ЛУННЫЙ РАЗБОР НА СЕГОДНЯ:**\n"
+        f"🔮 *ЛУННЫЙ РАЗБОР НА СЕГОДНЯ:*\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"{astro_divider := astro_digest}\n"
+        f"{astro_digest}\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"💬 **Цитата дня:**\n_{quote}_\n\n"
-        f"✨ **Специально для тебя:**\n_{compliment}_"
+        f"💬 *Цитата дня:*\n_{quote}_\n\n"
+        f"✨ *Специально для тебя:*\n_{compliment}_"
     )
     return message
 
