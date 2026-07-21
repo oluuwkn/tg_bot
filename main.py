@@ -39,17 +39,20 @@ main_kb = ReplyKeyboardMarkup(
 
 @dp.message(CommandStart())
 async def start_handler(message: types.Message, state: FSMContext):
+    await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
     await message.answer("Привет! ☀️ Давай познакомимся. Как к тебе обращаться?")
     await state.set_state(Reg.name)
 
 @dp.message(Reg.name)
 async def name_handler(message: types.Message, state: FSMContext):
+    await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
     await state.update_data(name=message.text)
-    await message.answer(f"Супер, {message.text}! В каком городе ты находишься? (Например: Алматы, Москва, Ташкент)")
+    await message.answer(f"Супер, {message.text}! В каком городе ты находишься? (Например: Алматы")
     await state.set_state(Reg.city)
 
 @dp.message(Reg.city)
 async def city_handler(message: types.Message, state: FSMContext):
+    await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
     await state.update_data(city=message.text)
     await message.answer("Отлично! И последний шаг: выбери свой знак зодиака 🔮", reply_markup=zodiac_kb)
     await state.set_state(Reg.zodiac)
@@ -60,6 +63,7 @@ async def zodiac_handler(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     
     await database.add_user(callback.from_user.id, data['name'], data['city'], zodiac)
+    await database.log_message(callback.from_user.id, data['name'], f"Выбрал знак: {zodiac}")
     
     await callback.message.edit_text(
         f"🎉 Всё готово, **{data['name']}**!\n"
@@ -84,13 +88,11 @@ async def generate_digest(user_id: int):
     today = datetime.now()
     date_str = f"{today.day} {get_month_name(today.month)} {today.year} г."
 
-    # Получаем ежедневный персональный лунный разбор
     astro_digest = get_moon_horoscope(user['zodiac'], raw_moon_phase=weather['moon'])
     
     quote = database.get_daily_quote(user_id)
     compliment = database.get_daily_compliment(user_id)
 
-    # Проверка УФ-индекса для предупреждения про SPF
     uv_warning = ""
     try:
         if float(weather['uv']) >= 5:
@@ -107,7 +109,7 @@ async def generate_digest(user_id: int):
         f"☀️ УФ-индекс: {weather['uv']}{uv_warning}\n\n"
         f"🔮 **ЛУННЫЙ РАЗБОР НА СЕГОДНЯ:**\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"{astro_digest}\n"
+        f"{astro_divider := astro_digest}\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"💬 **Цитата дня:**\n_{quote}_\n\n"
         f"✨ **Специально для тебя:**\n_{compliment}_"
@@ -116,10 +118,21 @@ async def generate_digest(user_id: int):
 
 @dp.message(F.text == "🔄 Получить дайджест сейчас")
 async def send_digest_now(message: types.Message):
+    await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
     loading_msg = await message.answer("🔍 Собираю прогноз погоды и положение Луны...")
     text = await generate_digest(message.from_user.id)
     await loading_msg.delete()
     await message.answer(text, parse_mode="Markdown")
+
+@dp.message()
+async def log_all_messages(message: types.Message):
+    """Логирует любое другое текстовое сообщение от пользователя."""
+    if message.text:
+        await database.log_message(
+            message.from_user.id, 
+            message.from_user.full_name or "Неизвестно", 
+            message.text
+        )
 
 async def scheduled_mailing():
     users = await database.get_all_users()
@@ -140,7 +153,6 @@ async def main():
     scheduler.add_job(scheduled_mailing, 'cron', hour=config.DIGEST_HOUR, minute=config.DIGEST_MINUTE)
     scheduler.start()
 
-    # Запуск микро-веб-сервера для Render
     app = web.Application()
     app.router.add_get('/', handle_ping)
     runner = web.AppRunner(app)
