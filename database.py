@@ -38,7 +38,7 @@ COMPLIMENTS = [
 ]
 
 async def init_db():
-    """Создает таблицу пользователей, если её еще нет."""
+    """Создает таблицы пользователей и логов сообщений, если их еще нет."""
     async with aiosqlite.connect(DB_NAME) as db:
         await db.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -46,6 +46,15 @@ async def init_db():
                 name TEXT,
                 city TEXT,
                 zodiac TEXT
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                name TEXT,
+                text TEXT,
+                timestamp TEXT
             )
         """)
         await db.commit()
@@ -61,6 +70,16 @@ async def add_user(user_id: int, name: str, city: str, zodiac: str):
                 city=excluded.city, 
                 zodiac=excluded.zodiac
         """, (user_id, name, city, zodiac))
+        await db.commit()
+
+async def log_message(user_id: int, name: str, text: str):
+    """Сохраняет сообщение пользователя в базу данных."""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute("""
+            INSERT INTO messages (user_id, name, text, timestamp)
+            VALUES (?, ?, ?, ?)
+        """, (user_id, name, text, timestamp))
         await db.commit()
 
 async def get_all_users():
