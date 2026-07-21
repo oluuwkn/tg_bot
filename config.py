@@ -1,0 +1,9 @@
+#ключи и настройки
+
+BOT_TOKEN = "8893617011:AAGEiAPSGJeWrP3XzxqRayjFz2RjBFVEj2c"
+WEATHER_API_KEY = "ef1a0510a25d4d3284454038262107"
+
+#время ежедневной рассылки
+
+DIGEST_HOUR = 8
+DIGEST_MINUTE = 0
