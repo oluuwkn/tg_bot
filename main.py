@@ -16,7 +16,7 @@ from astro import get_moon_horoscope, get_month_name
 
 bot = Bot(token=config.BOT_TOKEN)
 dp = Dispatcher()
-scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
+scheduler = AsyncIOScheduler(timezone="Asia/Almaty")
 
 class Reg(StatesGroup):
     name = State()
@@ -33,7 +33,7 @@ zodiac_kb = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 main_kb = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text="🔄 Получить дайджест сейчас")]],
+    keyboard=[[KeyboardButton(text="Получить дайджест сейчас")]],
     resize_keyboard=True
 )
 
@@ -46,19 +46,12 @@ async def notify_admin(user_id: int, user_name: str, text: str):
         except Exception as e:
             print(f"Не удалось отправить уведомление в группу: {e}")
 
-    if config.ADMIN_ID and config.ADMIN_ID != 880033347:
-        try:
-            admin_msg = f"📩 *Новое сообщение от пользователя!*\n👤 Имя: {user_name}\n🆔 ID: `{user_id}`\n💬 Текст: {text}"
-            await bot.send_message(config.ADMIN_ID, admin_msg, parse_mode="Markdown")
-        except Exception as e:
-            print(f"Не удалось отправить уведомление админу: {e}")
-
 @dp.message(CommandStart())
 async def start_handler(message: types.Message, state: FSMContext):
     await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
     await notify_admin(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
     
-    await message.answer("Привет! ☀️ Давай познакомимся. Как к тебе обращаться?")
+    await message.answer("Привет! Как мне к тебе обращаться?")
     await state.set_state(Reg.name)
 
 @dp.message(Reg.name)
@@ -67,7 +60,7 @@ async def name_handler(message: types.Message, state: FSMContext):
     await notify_admin(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
     
     await state.update_data(name=message.text)
-    await message.answer(f"Супер, {message.text}! В каком городе ты находишься? (Например: Алматы")
+    await message.answer(f"Супер, {message.text}! В каком городе ты находишься? (Например: Алматы)")
     await state.set_state(Reg.city)
 
 @dp.message(Reg.city)
@@ -76,7 +69,7 @@ async def city_handler(message: types.Message, state: FSMContext):
     await notify_admin(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
     
     await state.update_data(city=message.text)
-    await message.answer("Отлично! И последний шаг: выбери свой знак зодиака 🔮", reply_markup=zodiac_kb)
+    await message.answer("Отлично! Последний шаг: выбери свой знак зодиака", reply_markup=zodiac_kb)
     await state.set_state(Reg.zodiac)
 
 @dp.callback_query(Reg.zodiac)
@@ -86,7 +79,7 @@ async def zodiac_handler(callback: types.CallbackQuery, state: FSMContext):
     
     await database.add_user(callback.from_user.id, data['name'], data['city'], zodiac)
     await database.log_message(callback.from_user.id, data['name'], f"Выбрал знак: {zodiac}")
-    await notify_admin(callback.from_user.id, data['name'], f"✅ Завершил регистрацию! Город: {data['city']}, Знак: {zodiac}")
+    await notify_admin(callback.from_user.id, data['name'], f"Завершил регистрацию! Город: {data['city']}, Знак: {zodiac}")
     
     await callback.message.edit_text(
         f"🎉 Всё готово, *{data['name']}*!\n"
@@ -119,7 +112,7 @@ async def generate_digest(user_id: int):
     uv_warning = ""
     try:
         if float(weather['uv']) >= 5:
-            uv_warning = "\n🧴 *Защита от солнца:* УФ-индекс высокий (≥5), обязательно нанесите SPF перед выходом!"
+            uv_warning = "\n🧴 *Защита от солнца:* УФ-индекс высокий, обязательно нанесите SPF перед выходом!"
     except (ValueError, TypeError):
         pass
 
@@ -139,7 +132,7 @@ async def generate_digest(user_id: int):
     )
     return message
 
-@dp.message(F.text == "🔄 Получить дайджест сейчас")
+@dp.message(F.text == "Получить дайджест сейчас")
 async def send_digest_now(message: types.Message):
     await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
     await notify_admin(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
