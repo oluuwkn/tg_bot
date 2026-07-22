@@ -19,7 +19,7 @@ async def get_weather(city: str) -> dict | str:
     cleaned_city = city.strip().lower()
     is_almaty = False
     
-    # Жесткая привязка Алматы и его районов к точным координатам
+    # Жесткая привязка Алматы к точным координатам
     if any(alias in cleaned_city for alias in ["алматы", "almaty", "алма-ата", "alma-ata"]):
         query_city = "43.2389,76.8897"
         is_almaty = True
