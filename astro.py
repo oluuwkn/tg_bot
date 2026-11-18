@@ -24,10 +24,7 @@ COLORS = [
 ]
 
 def get_moon_astronomy_data(target_date: date) -> tuple[int, tuple]:
-    """
-    Вычисляет эклиптические координаты Луны и Солнца (алгоритм Миуса).
-    Возвращает (lunar_day, moon_zodiac_tuple).
-    """
+    #Вычисление эклиптических координат Луны и Солнца (алгоритм Миуса). Возвращение (lunar_day, moon_zodiac_tuple).
     year, month, day = target_date.year, target_date.month, target_date.day
     if month <= 2:
         year -= 1
@@ -76,13 +73,8 @@ def get_moon_astronomy_data(target_date: date) -> tuple[int, tuple]:
     return lunar_day, moon_zodiac
 
 def get_moon_horoscope(user_zodiac: str, raw_moon_phase: str = "") -> str:
-    """
-    Формирует лаконичный и точный лунный разбор:
-    - Луна в знаке + фаза
-    - Атмосфера дня
-    - Уникальный прогноз под знак зодиака
-    - Цвет дня
-    """
+    #Формировка лунного разбора. 1) Луна в знаке + фаза. 2) Атмосфера дня. 3) Уникальный прогноз под знак зодиака. 4) Цвет дня
+    
     today = datetime.now().date()
     lunar_day, moon_zodiac = get_moon_astronomy_data(today)
 
