@@ -1,13 +1,13 @@
-import asyncio
-import os
+import asyncio #библиотека для асинхронного программирования и запуска цикла событий
+import os 
 from datetime import datetime
-from aiogram import Bot, Dispatcher, F, types
-from aiogram.filters import CommandStart
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from aiohttp import web
+from aiogram import Bot, Dispatcher, F, types #основные компоненты aiogram. объект бота, диспетчер обновлений, «магический» фильтр F и типы данных Telegram
+from aiogram.filters import CommandStart #готовый фильтр для перехвата команды /start
+from aiogram.fsm.context import FSMContext #контекст машины состояний (FSM) для хранения и управления данными диалога с пользователем
+from aiogram.fsm.state import State, StatesGroup # классы для описания отдельных состояний (State) и объединения их в группы (StatesGroup)
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton #классы для создания инлайн-кнопок (под сообщением) и обычных кнопок (в меню ввода)
+from apscheduler.schedulers.asyncio import AsyncIOScheduler # асинхронный планировщик задач для выполнения функций по расписанию (например, утренних рассылок)
+from aiohttp import web # веб-модуль aiohttp
 
 import config
 import database
@@ -15,7 +15,7 @@ from weather import get_weather
 from astro import get_moon_horoscope, get_month_name
 
 bot = Bot(token=config.BOT_TOKEN)
-dp = Dispatcher()
+dp = Dispatcher() # инициализация диспетчера, который принимает входящие обновления
 scheduler = AsyncIOScheduler(timezone="Asia/Almaty")
 
 class Reg(StatesGroup):
@@ -38,7 +38,7 @@ main_kb = ReplyKeyboardMarkup(
 )
 
 async def notify_admin(user_id: int, user_name: str, text: str):
-    """Вспомогательная функция для пересылки сообщений и уведомлений в указанную группу."""
+    # вспомогательная функция для пересылки сообщений и уведомлений в указанную группу
     if config.ADMIN_ID and config.ADMIN_ID != -1001234567890:
         try:
             admin_msg = f"📩 *Новое сообщение от пользователя!*\n👤 Имя: {user_name}\n🆔 ID: `{user_id}`\n💬 Текст: {text}"
