@@ -37,15 +37,7 @@ main_kb = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
-async def notify_admin(user_id: int, user_name: str, text: str):
-    # вспомогательная функция для пересылки сообщений и уведомлений в указанную группу
-    if config.ADMIN_ID and config.ADMIN_ID != -1001234567890:
-        try:
-            admin_msg = f"📩 *Новое сообщение от пользователя!*\n👤 Имя: {user_name}\n🆔 ID: `{user_id}`\n💬 Текст: {text}"
-            await bot.send_message(config.ADMIN_ID, admin_msg, parse_mode="Markdown")
-        except Exception as e:
-            print(f"Не удалось отправить уведомление в группу: {e}")
-
+#декоратор. перехватывает команду /start
 @dp.message(CommandStart())
 async def start_handler(message: types.Message, state: FSMContext):
     await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
@@ -53,16 +45,16 @@ async def start_handler(message: types.Message, state: FSMContext):
     
     await message.answer("Привет! Как мне к тебе обращаться?")
     await state.set_state(Reg.name)
-
+# декоратор. срабатывает, когда пользователь находится в состоянии Reg.name
 @dp.message(Reg.name)
 async def name_handler(message: types.Message, state: FSMContext):
     await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
     await notify_admin(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
-    
+    # сохранение имени во временную память FSM под ключом 'name'
     await state.update_data(name=message.text)
     await message.answer(f"Супер, {message.text}! В каком городе ты находишься? (Например: Алматы)")
     await state.set_state(Reg.city)
-
+#декоратор. срабатывает в состоянии Reg.city
 @dp.message(Reg.city)
 async def city_handler(message: types.Message, state: FSMContext):
     await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
@@ -71,7 +63,7 @@ async def city_handler(message: types.Message, state: FSMContext):
     await state.update_data(city=message.text)
     await message.answer("Отлично! Последний шаг: выбери свой знак зодиака", reply_markup=zodiac_kb)
     await state.set_state(Reg.zodiac)
-
+#декоратор. ловит нажатие инлайн-кнопки (callback_query), когда пользователь в состоянии Reg.zodiac
 @dp.callback_query(Reg.zodiac)
 async def zodiac_handler(callback: types.CallbackQuery, state: FSMContext):
     zodiac = callback.data
@@ -92,7 +84,7 @@ async def zodiac_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
 
 async def generate_digest(user_id: int):
-    """Генерация персонализированного дайджеста с датой, погодой, лунным разбором, цитатой и комплиментом."""
+    #Генерация персонализированного дайджеста с датой, погодой, лунным разбором, цитатой и комплиментом
     user = await database.get_user(user_id)
     if not user:
         return "Произошла ошибка. Пожалуйста, пройдите регистрацию заново: /start"
@@ -131,7 +123,7 @@ async def generate_digest(user_id: int):
         f"✨ *Специально для тебя:*\n_{compliment}_"
     )
     return message
-
+# декоратор. срабатывает при нажатии кнопки меню с точным текстом "Получить дайджест сейчас"
 @dp.message(F.text == "Получить дайджест сейчас")
 async def send_digest_now(message: types.Message):
     await database.log_message(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
@@ -141,18 +133,8 @@ async def send_digest_now(message: types.Message):
     text = await generate_digest(message.from_user.id)
     await loading_msg.delete()
     await message.answer(text, parse_nomarkdown=True, parse_mode="Markdown")
-
-@dp.message()
-async def log_all_messages(message: types.Message):
-    """Логирует любое другое текстовое сообщение от пользователя и пересылает в группу."""
-    if message.text:
-        await database.log_message(
-            message.from_user.id, 
-            message.from_user.full_name or "Неизвестно", 
-            message.text
-        )
-        await notify_admin(message.from_user.id, message.from_user.full_name or "Неизвестно", message.text)
-
+    
+#функция рассылки дайджестов по расписанию
 async def scheduled_mailing():
     users = await database.get_all_users()
     for user in users:
@@ -164,7 +146,7 @@ async def scheduled_mailing():
             print(f"Не удалось отправить пользователю {user['user_id']}: {e}")
 
 async def handle_ping(request):
-    """Веб-страница для проверки статуса Render (Health Check)."""
+    #Веб-страница для проверки статуса Render
     return web.Response(text="Bot is running 24/7!")
 
 async def main():
@@ -172,7 +154,7 @@ async def main():
     scheduler.add_job(scheduled_mailing, 'cron', hour=config.DIGEST_HOUR, minute=config.DIGEST_MINUTE)
     scheduler.start()
 
-    app = web.Application()
+    app = web.Application() #экземпляр веб-приложения aiohttp
     app.router.add_get('/', handle_ping)
     runner = web.AppRunner(app)
     await runner.setup()
