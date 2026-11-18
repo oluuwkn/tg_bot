@@ -4,7 +4,7 @@ from datetime import datetime
 
 DB_NAME = "users.db"
 
-# Расширенная коллекция цитат и вдохновляющих пожеланий
+# коллекция цитат и вдохновляющих пожеланий
 QUOTES = [
     "Сегодня идеальный день, чтобы сделать первый шаг к своей цели.",
     "Маленькие шаги каждый день приводят к большим результатам.",
@@ -21,7 +21,7 @@ QUOTES = [
     "Будь добр к себе сегодня. Ты делаешь всё, что в твоих силах."
 ]
 
-# Расширенная коллекция персональных комплиментов
+# коллекция персональных комплиментов
 COMPLIMENTS = [
     "Ты обладаешь невероятной внутренней силой!",
     "У тебя отличный вкус и прекрасное чувство баланса.",
@@ -38,7 +38,7 @@ COMPLIMENTS = [
 ]
 
 async def init_db():
-    """Создает таблицы пользователей и логов сообщений, если их еще нет."""
+    #Создание таблицы пользователей и логов сообщений, если их еще нет
     async with aiosqlite.connect(DB_NAME) as db:
         await db.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -60,7 +60,7 @@ async def init_db():
         await db.commit()
 
 async def add_user(user_id: int, name: str, city: str, zodiac: str):
-    """Добавляет или обновляет данные пользователя."""
+    #Добавление или обновление данных пользователя
     async with aiosqlite.connect(DB_NAME) as db:
         await db.execute("""
             INSERT INTO users (user_id, name, city, zodiac) 
@@ -73,7 +73,7 @@ async def add_user(user_id: int, name: str, city: str, zodiac: str):
         await db.commit()
 
 async def log_message(user_id: int, name: str, text: str):
-    """Сохраняет сообщение пользователя в базу данных."""
+    #Сохранение сообщения пользователя в базу данных
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     async with aiosqlite.connect(DB_NAME) as db:
         await db.execute("""
@@ -83,28 +83,28 @@ async def log_message(user_id: int, name: str, text: str):
         await db.commit()
 
 async def get_all_users():
-    """Получает список всех пользователей для рассылки."""
+    #Получение списка всех пользователей для рассылки
     async with aiosqlite.connect(DB_NAME) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM users") as cursor:
             return await cursor.fetchall()
 
 async def get_user(user_id: int):
-    """Получает данные одного пользователя."""
+    #Получение данных одного пользователя
     async with aiosqlite.connect(DB_NAME) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)) as cursor:
             return await cursor.fetchone()
 
 def get_daily_quote(user_id: int = 0) -> str:
-    """Возвращает цитату, которая обновляется каждый день и не повторяется сутки."""
+    #Возврат цитаты, которая обновляется каждый день и не повторяется сутки
     date_str = datetime.now().strftime("%Y-%m-%d")
     seed_str = f"{date_str}_quote_{user_id}"
     hash_val = int(hashlib.md5(seed_str.encode()).hexdigest(), 16)
     return QUOTES[hash_val % len(QUOTES)]
 
 def get_daily_compliment(user_id: int = 0) -> str:
-    """Возвращает комплимент, обновляющийся ежедневно."""
+    #Возврат комплимента, обновляющийся ежедневно
     date_str = datetime.now().strftime("%Y-%m-%d")
     seed_str = f"{date_str}_compliment_{user_id}"
     hash_val = int(hashlib.md5(seed_str.encode()).hexdigest(), 16)
