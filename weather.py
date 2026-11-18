@@ -13,13 +13,13 @@ MOON_PHASES = {
 }
 
 async def get_weather(city: str) -> dict | str:
-    """Делает запрос к WeatherAPI и форматирует название города."""
+    # запрос к WeatherAPI и форматировнаие названия города
     url = "http://api.weatherapi.com/v1/forecast.json"
     
     cleaned_city = city.strip().lower()
     is_almaty = False
     
-    # Жесткая привязка Алматы к точным координатам
+    # привязка Алматы к точным координатам
     if any(alias in cleaned_city for alias in ["алматы", "almaty", "алма-ата", "alma-ata"]):
         query_city = "43.2389,76.8897"
         is_almaty = True
@@ -32,7 +32,7 @@ async def get_weather(city: str) -> dict | str:
         "days": 1,
         "lang": "ru"
     }
-
+#открытие асинхронной клиентской сессию aiohttp
     async with aiohttp.ClientSession() as session:
         async with session.get(url, params=params) as response:
             if response.status != 200:
@@ -60,7 +60,7 @@ async def get_weather(city: str) -> dict | str:
             
             raw_moon = astro['moon_phase']
             moon = MOON_PHASES.get(raw_moon, raw_moon)
-            
+            #соварь с готовыми строками для вставки в текст дайджеста
             return {
                 "city_name": resolved_city,
                 "temp": f"{temp}°C",
